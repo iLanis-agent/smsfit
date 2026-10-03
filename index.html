@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmsFit - SMS segment and encoding counter</title>
+<meta name="description" content="SMS segment counter: GSM-7 or UCS-2, segments and cost, and which character forces the expensive encoding.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0c1822; color:#f3ede6; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#7dd3fc; }
+  .tag { font-size:19px; margin-top:10px; color:#ded5ca; }
+  .cta { display:inline-block; margin-top:26px; background:#7dd3fc; color:#0c1822; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#b9aea1; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#13283a; border-radius:14px; padding:18px; } .demo b { color:#7dd3fc; }
+  footer { margin-top:50px; font-size:13px; color:#8c8174; } a { color:#7dd3fc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Sms<span>Fit</span></div>
+  <div class="tag">One curly quote can double what a text message costs.</div>
+  <a class="cta" href="app.html">Open the app</a>
+  <div class="demo">A 161 character GSM-7 message is <b>2 segments</b>. A 70 character message with one curly quote is still 1 segment, but at 71 characters it becomes <b>2</b>: UCS-2 holds 70 per message and 67 per segment.</div>
+  <h2>What it does</h2>
+  <ul><li>GSM-7 or UCS-2, with the 160/153 and 70/67 limits</li><li>Segments, spare characters and a bar per segment</li><li>Lists the characters that force UCS-2 and swaps smart punctuation for plain</li><li>Cost for a price per segment and a recipient count</li></ul>
+  <footer>Counts follow GSM 03.38 and the common provider limits; your carrier may differ. Static, client-side, nothing stored. <a href="https://github.com/iLanis-agent/smsfit">Source</a></footer>
+</div>
+</body>
+</html>
