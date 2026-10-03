@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmsFit - SMS segment and encoding counter</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0c1822; color:#f3ede6; line-height:1.5; }
+  .wrap { max-width:700px; margin:0 auto; padding:26px 16px 50px; }
+  h1 { font-size:28px; } h1 span { color:#7dd3fc; }
+  .sub { color:#b5aa9c; margin:6px 0 16px; }
+  .card { background:#13283a; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  label { font-size:12px; color:#b5aa9c; display:block; margin-bottom:3px; }
+  input,select { width:100%; background:#0c1822; color:#f3ede6; border:1px solid #574f48; border-radius:8px; padding:8px; font-size:15px; font-family:inherit; }
+  button { background:#1d5b87; color:#f3ede6; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-right:6px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px 4px; border-bottom:1px solid #433c36; } th { font-size:12px; color:#b5aa9c; font-weight:600; }
+  td.v { font-size:22px; font-weight:800; color:#7dd3fc; } tr.me td.v { color:#f3ede6; }
+  .stats { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; } .stats b { display:block; font-size:20px; } .muted { color:#b5aa9c; font-size:13px; }
+  .err { color:#ff9c8a; } .note { font-size:12.5px; color:#8c8174; margin-top:6px; }
+
+  td.v { font-size:17px; } td, th { font-size:14px; } .bar { height:10px; background:#0c1822; border-radius:6px; overflow:hidden; margin-top:6px; } .bar i { display:block; height:100%; background:#7dd3fc; } .bar i.over { background:#ff7b72; } .no { color:#ff9c8a; }
+  .cb { display:inline-flex; align-items:center; gap:4px; margin-right:12px; font-size:14px; color:#f3ede6; } .cb input { width:auto; } .big { font-family:monospace; font-size:26px; font-weight:800; color:#7dd3fc; } td.v.m { font-family:monospace; }
+  textarea { width:100%; background:#0c1822; color:#f3ede6; border:1px solid #574f48; border-radius:8px; padding:8px; font-size:14px; font-family:monospace; min-height:110px; } .ok { color:#86efac; font-weight:700; } .no { color:#ff9c8a; } td.m { font-family:monospace; } .chip { display:inline-block; font-family:monospace; background:#0c1822; border-radius:6px; padding:2px 6px; margin:2px 4px 2px 0; }
+  textarea { width:100%; background:#0c1822; color:#f3ede6; border:1px solid #574f48; border-radius:8px; padding:8px; font-size:13px; font-family:monospace; min-height:130px; } .badge { display:inline-block; font-weight:800; padding:4px 12px; border-radius:20px; background:#0c1822; } .bar { height:14px; background:#0c1822; border-radius:8px; position:relative; margin:12px 0 6px; overflow:hidden; } .bar i.f { position:absolute; left:0; top:0; bottom:0; background:#38a3d8; } .bar i.n { position:absolute; top:0; bottom:0; width:3px; background:#fff; }
+  .seg { display:inline-block; height:22px; background:#38a3d8; border-radius:4px; margin:2px 2px 2px 0; vertical-align:middle; } .seg.last { background:#1d5b87; } .chip { display:inline-block; font-family:monospace; background:#0c1822; border-radius:6px; padding:2px 8px; margin:2px 4px 2px 0; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sms<span>Fit</span></h1>
+  <div class="sub">Paste your text message. See which encoding it needs, how many segments it costs, and which character is doing the damage.</div>
+  <div class="card">
+    <label>Message</label>
+    <textarea id="t" spellcheck="false" style="min-height:120px">Your order #4821 has shipped. Track it here: https://example.com/t/4821 “Thanks for shopping with us” – Mia</textarea>
+    <button id="p1">Plain text</button><button id="p2">Smart quotes</button><button id="p3">Euro sign</button><button id="p4">Emoji</button><button id="p5">161 characters</button><button id="fix">Replace smart punctuation</button>
+    <div id="res" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <h2 style="margin:0 0 8px;font-size:15px">What it costs</h2>
+    <div class="grid"><div><label>Price per segment</label><input id="pr" value="0.0079"></div><div><label>Recipients</label><input id="rc" value="10000"></div></div>
+    <div id="cost" style="margin-top:8px"></div>
+  </div>
+  <div class="note">Encodings: GSM-7 (the 3GPP TS 23.038 default alphabet, read from the table on the Wikipedia GSM 03.38 page) holds 160 characters in one message and 153 per segment in a longer one. Anything outside that alphabet switches the whole message to UCS-2 (UTF-16), which holds 70 in one message and 67 per segment. Both limits match Twilio's SMS character limit table. Characters from the GSM extension table ( ^ { } \ [ ~ ] | and the euro sign) cost two septets. The tool does not let a two-unit character straddle two segments (an extension pair, or an emoji), which is how I understand handlers to behave; I could not confirm this from a primary source, so a carrier or provider may count one segment differently. The "smart punctuation" fix replaces curly quotes, en and em dashes, the ellipsis and the non-breaking space with plain ASCII. National language shift tables, delivery reports, link shorteners and provider-added opt-out text are not modelled. The default price is only an example: use your provider's rate. Runs in your browser, nothing stored.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var S = window.SmsFit, $ = function (i) { return document.getElementById(i); };
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function name(c) { var cp = c.codePointAt(0); return c === '“' ? 'left curly quote' : c === '”' ? 'right curly quote' : c === '\u2018' ? 'left curly apostrophe' : c === '\u2019' ? 'right curly apostrophe' : c === '–' ? 'en dash' : c === '\u2014' ? 'em dash' : c === '\u2026' ? 'ellipsis' : c === '\u00a0' ? 'non-breaking space' : 'U+' + cp.toString(16).toUpperCase(); }
+  function run() {
+    var t = $('t').value, a = S.analyze(t), o = '';
+    var enc = a.encoding === 'gsm' ? 'GSM-7' : 'UCS-2';
+    o += '<div><span class="badge ' + (a.encoding === 'gsm' ? 'ok' : 'no') + '">' + enc + '</span></div>';
+    o += '<div class="stats"><div><b>' + a.length + '</b>' + (a.encoding === 'gsm' ? 'septets' : 'UTF-16 units') + '</div><div><b>' + a.segments + '</b>segment' + (a.segments === 1 ? '' : 's') + '</div><div><b>' + (a.segments ? a.perSegment - a.used[a.used.length - 1] : a.perSegment) + '</b>' + (a.segments > 1 ? 'spare in the last segment' : 'left in this message') + '</div></div>';
+    if (a.segments > 1) { var maxu = a.perSegment; o += '<div style="margin-top:8px">' + a.used.map(function (u, i) { return '<span class="seg' + (i === a.used.length - 1 ? ' last' : '') + '" style="width:' + Math.max(6, Math.round(u / maxu * 100)) + 'px" title="' + u + ' of ' + maxu + '"></span>'; }).join('') + '</div><div class="muted">Each bar is one segment, up to ' + maxu + ' each.</div>'; }
+    var off = S.offenders(t);
+    if (a.encoding === 'ucs2') {
+      o += '<div style="margin-top:10px" class="no">These characters are not in the GSM-7 alphabet:</div><div>' + off.map(function (c) { return '<span class="chip">' + esc(c) + '</span><span class="muted">' + esc(name(c)) + '</span> '; }).join('') + '</div>';
+      var s2 = S.simplify(t), a2 = S.analyze(s2);
+      if (s2 !== t) o += '<div style="margin-top:8px">Replacing smart punctuation would give <b>' + a2.segments + '</b> segment' + (a2.segments === 1 ? '' : 's') + ' in ' + (a2.encoding === 'gsm' ? 'GSM-7' : 'UCS-2 (other characters remain)') + '.</div>';
+      else o += '<div class="muted" style="margin-top:8px">No simple replacement. Removing or replacing these characters would bring it back to GSM-7.</div>';
+    }
+    $('res').innerHTML = o;
+    var pr = parseFloat($('pr').value), rc = parseFloat($('rc').value);
+    if (isNaN(pr) || isNaN(rc) || pr < 0 || rc < 0) $('cost').innerHTML = '<span class="muted">Enter a price and a number of recipients.</span>';
+    else { var parts = a.segments * rc; $('cost').innerHTML = '<b>' + parts.toLocaleString('en-US') + '</b> segments sent, about <b>' + (parts * pr).toLocaleString('en-US', { maximumFractionDigits: 2 }) + '</b> in total.'; }
+  }
+  var P = { p1: 'Hi Sam, your table is booked for Friday at 7pm. Reply C to cancel.', p2: 'Your code is 482913. “Do not share it” – the team', p3: 'Total due: \u20ac49.90 incl. VAT. Pay by Friday to avoid a fee.', p4: 'Happy birthday! \ud83c\udf89 See you tonight', p5: new Array(161).join('a') + 'b' };
+  Object.keys(P).forEach(function (k) { $(k).onclick = function () { $('t').value = P[k]; run(); }; });
+  $('fix').onclick = function () { $('t').value = S.simplify($('t').value); run(); };
+  $('t').oninput = $('pr').oninput = $('rc').oninput = run;
+  run();
+})();
+</script>
+</body>
+</html>
